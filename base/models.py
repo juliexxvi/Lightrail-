@@ -3,7 +3,7 @@ from django.db import models
 # Create your models here.
 
 class Agency(models.Model):
-    agency_id = models.CharField(max_length=200)
+    agency_id = models.CharField(max_length=200, primary_key=True)
     agency_name = models.CharField(max_length=200)
     agency_url = models.CharField(max_length=200)
     agency_timezone = models.CharField(max_length=200)
@@ -16,7 +16,7 @@ class CalendarDate(models.Model):
     exception_type = models.IntegerField()
 
 class Calendar(models.Model):
-    service_id = models.CharField(max_length=200)
+    service_id = models.CharField(max_length=200, primary_key=True)
     monday = models.IntegerField()
     tuesday = models.IntegerField()
     wednesday = models.IntegerField()
@@ -28,7 +28,7 @@ class Calendar(models.Model):
     end_date = models.CharField(max_length=200)
 
 class Route(models.Model):
-    route_id = models.CharField(max_length=200)
+    route_id = models.CharField(max_length=200, primary_key=True)
     agency_id = models.CharField(max_length=200)
     route_short_name = models.CharField(max_length=200)
     route_long_name = models.CharField(max_length=200)
@@ -38,7 +38,7 @@ class Route(models.Model):
     route_text_colour = models.CharField(max_length=200)
 
 class Shape(models.Model):
-    shape_id = models.CharField(max_length=200)
+    shape_id = models.CharField(max_length=200, primary_key=True)
     shape_pt_lat = models.CharField(max_length=200)
     shape_pt_lon = models.CharField(max_length=200)
     shape_pt_sequence = models.CharField(max_length=200)
@@ -58,7 +58,7 @@ class StopTime(models.Model):
     stop_note_id = models.CharField(max_length=200)
 
 class Stop(models.Model):
-    stop_id = models.CharField(max_length=200)
+    stop_id = models.CharField(max_length=200, primary_key=True)
     stop_name = models.CharField(max_length=200)
     stop_lat = models.CharField(max_length=200)
     stop_lon = models.CharField(max_length=200)
@@ -70,7 +70,7 @@ class Stop(models.Model):
 class Trip(models.Model):
     route_id = models.CharField(max_length=200)
     service_id = models.CharField(max_length=200)
-    trip_id = models.CharField(max_length=200)
+    trip_id = models.CharField(max_length=200, primary_key=True)
     trip_headsign = models.CharField(max_length=200)
     direction_id = models.IntegerField()
     block_id = models.CharField(max_length=200)
@@ -80,5 +80,5 @@ class Trip(models.Model):
     route_direction = models.CharField(max_length=200)
 
 class Note(models.Model):
-    note_id = models.CharField(max_length=200)
+    note_id = models.CharField(max_length=200, primary_key=True)
     note_text = models.CharField(max_length=200)
