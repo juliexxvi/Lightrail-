@@ -4,7 +4,7 @@ from zipfile import ZipFile
 import csv
 from io import TextIOWrapper
 from . import utils
-from base.models import Stop, Trip, StopTime, Calendar
+from base.models import Stop, Trip, StopTime
 
 @api_view(['POST'])
 def upload_GTFS_file(request):
@@ -48,16 +48,38 @@ def get_stop_schedules(request, stop_id):
         }
         return Response(data, status=400)
 
-    stop_times = StopTime.objects.filter(stop_id=stop_id)
-    trip_ids = list(stop_times.values_list('trip_id', flat=True).distinct())
-    trips = Trip.objects.filter(trip_id__in=trip_ids)
-
-    service_ids = list(trips.values_list('service_id', flat=True).distinct())
-    kwargs = {
-        'service_id__in': service_ids,
-        day: 0,
+    raw_sql = f"""
+        SELECT * FROM base_stoptime bs
+        JOIN base_trip bt ON bs.trip_id = bt.trip_id
+        JOIN base_calendar bc ON bt.service_id = bc.service_id
+        WHERE bs.stop_id = "{stop_id}" AND bc.{day} = 1
+        ORDER BY bs.departure_time;
+    """
+    stop_times = list(StopTime.objects.raw(raw_sql))
+    schedules = []
+    for stop_time in stop_times:
+        trip = Trip.objects.get(trip_id=stop_time.trip_id)
+        schedule = {
+            'arrival_time': stop_time.arrival_time,
+            'departure_time': stop_time.departure_time,
+            'stop_headsign': stop_time.stop_headsign,
+            'trip_headsign': trip.trip_headsign,
+            'route_direction': trip.route_direction,
+        }
+        schedules.append(schedule)
+    data = {
+        'stop_id': stop_id,
+        'stop_name': stop.stop_name,
+        'platform_code': stop.platform_code,
+        'wheelchair_boarding': stop.wheelchair_boarding,
+        'schedules': schedules,
     }
-    valid_service_ids = list(Calendar.objects.filter(**kwargs).values_list('service_id', flat=True))
-    # Todo: join multiple tables
     
-    return Response()
+    return Response(data)
+
+@api_view(['GET'])
+def get_trips(request):
+    trips = Trip.objects.all()
+    uri = request.build_absolute_uri()
+    links = map(lambda trip: f'{uri}/{trip.trip_id}', trips)
+    return Response(links)
