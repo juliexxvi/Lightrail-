@@ -46,6 +46,8 @@ def get_stop_schedules(request, stop_id):
     schedules = []
     for stop_time in stop_times:
         schedule = {
+            'route_short_name': stop_time.trip.route.route_short_name,
+            'route_long_name': stop_time.trip.route.route_long_name,
             'arrival_time': stop_time.arrival_time,
             'departure_time': stop_time.departure_time,
             'stop_headsign': stop_time.stop_headsign,
@@ -69,3 +71,38 @@ def get_trips(request):
     uri = request.build_absolute_uri()
     links = map(lambda trip: f'{uri}/{trip.trip_id}', trips)
     return Response(links)
+
+@api_view(['GET'])
+def get_trip_detail(request, trip_id):
+    try:
+        trip = Trip.objects.get(trip_id=trip_id)
+    except Trip.DoesNotExist:
+        data = {
+            'message': f'Cannot find trip_id {trip_id}'
+        }
+        return Response(data, status=400)
+
+    # Get first trip time and last trip time
+    stop_times = list(StopTime.objects.filter(trip__trip_id=trip_id).order_by('stop_sequence'))
+    start_time = stop_times[0].departure_time
+    end_time = stop_times[len(stop_times) - 1].departure_time
+
+    # Get weekday the trip running on
+    running_on = []
+    day_of_weeks = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+    for day in day_of_weeks:
+        if trip.service.__dict__.get(day) == 1:
+            running_on.append(day)
+    
+    data = {
+        'route_short_name': trip.route.route_short_name,
+        'route_long_name': trip.route.route_long_name,
+        'trip_headsign': trip.trip_headsign,
+        'route_direction': trip.route_direction,
+        'start_time': start_time,
+        'end_time': end_time,
+        'running_on': running_on,
+    }
+
+    return Response(data)
+
