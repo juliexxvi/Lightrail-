@@ -1,8 +1,6 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from zipfile import ZipFile
-import csv
-from io import TextIOWrapper
 from . import utils
 from base.models import Stop, Trip, StopTime
 
@@ -12,12 +10,7 @@ def upload_GTFS_file(request):
     
     try:
         with ZipFile(file_obj, 'r') as zip:
-            for csv_name in zip.namelist():
-                with zip.open(csv_name, 'r') as file:
-                    reader = csv.reader(TextIOWrapper(file, 'utf-8'))
-                    next(reader, None) # skip header
-                    for row in reader:
-                        utils.add_to_database(csv_name, row)
+            utils.add_to_database_in_order(zip)
         return Response(data={'message': 'Process file successfully!'}, status=201)
     except Exception as e:
         return Response(data={'message': 'Something went wrong', 'error': str(e)}, status=415)
@@ -48,23 +41,16 @@ def get_stop_schedules(request, stop_id):
         }
         return Response(data, status=400)
 
-    raw_sql = f"""
-        SELECT * FROM base_stoptime bs
-        JOIN base_trip bt ON bs.trip_id = bt.trip_id
-        JOIN base_calendar bc ON bt.service_id = bc.service_id
-        WHERE bs.stop_id = "{stop_id}" AND bc.{day} = 1
-        ORDER BY bs.departure_time;
-    """
-    stop_times = list(StopTime.objects.raw(raw_sql))
+    kwargs = {'stop__stop_id': stop_id, f'trip__service__{day}': 1}
+    stop_times = list(StopTime.objects.filter(**kwargs).order_by('departure_time'))
     schedules = []
     for stop_time in stop_times:
-        trip = Trip.objects.get(trip_id=stop_time.trip_id)
         schedule = {
             'arrival_time': stop_time.arrival_time,
             'departure_time': stop_time.departure_time,
             'stop_headsign': stop_time.stop_headsign,
-            'trip_headsign': trip.trip_headsign,
-            'route_direction': trip.route_direction,
+            'trip_headsign': stop_time.trip.trip_headsign,
+            'route_direction': stop_time.trip.route_direction,
         }
         schedules.append(schedule)
     data = {

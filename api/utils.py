@@ -1,3 +1,5 @@
+import csv
+from io import TextIOWrapper
 from base.models import Agency, CalendarDate, Calendar, Route, Shape, StopTime, Stop, Trip, Note
 
 def add_to_database(filename, row):
@@ -72,7 +74,7 @@ def add_to_database(filename, row):
                     'drop_off_type': row[7],
                     'shape_distance_traveled': row[8],
                     'timepoint': row[9],
-                    'stop_note_id': row[10],
+                    'stop_note_id': row[10] if row[10] != '' else None,
                 }
                 StopTime.objects.update_or_create(trip_id=data['trip_id'], stop_id=data['stop_id'], defaults=data)
 
@@ -99,7 +101,7 @@ def add_to_database(filename, row):
                     'block_id': row[6],
                     'shape_id': row[7],
                     'wheelchair_accessible': row[8],
-                    'trip_note_id': row[10],
+                    'trip_note_id': row[10] if row[10] != '' else None,
                     'route_direction': row[11],
                 }
                 Trip.objects.update_or_create(trip_id=data['trip_id'], defaults=data)
@@ -114,4 +116,38 @@ def add_to_database(filename, row):
             case _:
                 return
     except Exception as e:
-        raise Exception(str(e))
+        raise Exception(f'{str(e)} {filename} {str(row)}')
+
+def process_csv_file(file):
+    reader = csv.reader(TextIOWrapper(file, 'utf-8'))
+    next(reader, None) # to skip header
+    for row in reader:
+        add_to_database(file.name, row)
+
+def add_to_database_in_order(zip):
+    with zip.open('agency.txt', 'r') as file:
+        process_csv_file(file)
+
+    with zip.open('calendar.txt', 'r') as file:
+        process_csv_file(file)
+
+    with zip.open('calendar_dates.txt', 'r') as file:
+        process_csv_file(file)
+
+    with zip.open('routes.txt', 'r') as file:
+        process_csv_file(file)
+
+    with zip.open('shapes.txt', 'r') as file:
+        process_csv_file(file)
+
+    with zip.open('notes.txt', 'r') as file:
+        process_csv_file(file)
+
+    with zip.open('trips.txt', 'r') as file:
+        process_csv_file(file)
+
+    with zip.open('stops.txt', 'r') as file:
+        process_csv_file(file)
+
+    with zip.open('stop_times.txt', 'r') as file:
+        process_csv_file(file)
