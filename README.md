@@ -24,6 +24,12 @@ pip install django
 pip install djangorestframework
 ```
 
+- Apply migrations by calling migrate
+```
+python manage.py migrate
+```
+
+
 - To run the program, we use the command
 ```
 python manage.py runserver
